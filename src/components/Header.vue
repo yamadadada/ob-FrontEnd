@@ -15,6 +15,11 @@
         哔哩哔哩
       </router-link>
     </el-menu-item>
+    <el-menu-item index="4">
+      <router-link to='/tools'>
+        小工具
+      </router-link>
+    </el-menu-item>
   </el-menu>
 </template>
 

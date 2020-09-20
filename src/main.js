@@ -11,6 +11,8 @@ import echarts from 'echarts'
 import axios from 'axios'
 import global from './components/common.vue'
 import Log from './components/Log.vue'
+import Tools from './components/Tools.vue'
+import AddFDGVideo from './components/AddFDGVideo.vue'
 
 Vue.config.productionTip = false
 Vue.use(ElementUI)
@@ -21,7 +23,9 @@ const routes = [
   { path: '/game', component: Game},
   { path: '/game/:gid', component: GameDetail},
   { path: '/bili', component: Bili},
-  { path: '/log', component: Log}
+  { path: '/log', component: Log},
+  { path: '/tools', component: Tools},
+  { path: '/addfdgvideo', component: AddFDGVideo}
 ]
 
 const router = new VueRouter({
