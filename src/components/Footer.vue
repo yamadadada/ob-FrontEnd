@@ -1,10 +1,10 @@
 <template>
   <div style="background: #F7FBFD; padding-top: 20px; padding-bottom: 20px;">
     <div style="font-size: 16px; margin-top: 7px;">
-      建议使用PC Chrome浏览器访问本网站
+      建议使用Chrome、Edge浏览器访问本网站
     </div>
     <div style="font-size: 13px; margin-top: 7px;">
-      © 2020 yamadadada, v2.5, 2020-09-20
+      © 2020 yamadadada, v2.6, 2020-09-22
     </div>
     <div style="font-size: 15px; margin-top: 7px;">
       <a href="https://space.bilibili.com/3250022" target="_blank">B站</a>

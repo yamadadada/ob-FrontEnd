@@ -100,7 +100,7 @@ export default {
         if (res.code === 200 && res.data) {
           const data = res.data;
           that.video = data;
-          this.$message('提交成功！');
+          that.$message('提交成功！');
         } else {
           that.$message.error('没有找到相关视频');
         }
