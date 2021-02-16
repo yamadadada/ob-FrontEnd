@@ -42,7 +42,7 @@
       </el-image>
     </div>
     <div>
-      {{ video.pubdate }}
+      {{ moment((new Date(video.pubdate)).getTime() + 3600 * 1000 * 8).format('YYYY-MM-DD HH:mm:ss') }}
     </div>
     <div>
       UP主：{{ video.owner }}

@@ -4,7 +4,7 @@
       建议使用Chrome、Edge浏览器访问本网站
     </div>
     <div style="font-size: 13px; margin-top: 7px;">
-      © 2020 yamadadada, v2.6, 2020-09-22
+      © 2020 yamadadada, v2.7, 2021-02-16
     </div>
     <div style="font-size: 15px; margin-top: 7px;">
       <a href="https://space.bilibili.com/3250022" target="_blank">B站</a>
