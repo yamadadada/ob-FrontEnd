@@ -16,6 +16,11 @@
       </router-link>
     </el-menu-item>
     <el-menu-item index="4">
+      <router-link to='/fund'>
+        基金
+      </router-link>
+    </el-menu-item>
+    <el-menu-item index="5">
       <router-link to='/tools'>
         小工具
       </router-link>

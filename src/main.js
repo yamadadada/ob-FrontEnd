@@ -13,6 +13,7 @@ import global from './components/common.vue'
 import Log from './components/Log.vue'
 import Tools from './components/Tools.vue'
 import AddFDGVideo from './components/AddFDGVideo.vue'
+import Fund from './components/Fund.vue'
 
 Vue.config.productionTip = false
 Vue.use(ElementUI)
@@ -25,7 +26,8 @@ const routes = [
   { path: '/bili', component: Bili},
   { path: '/log', component: Log},
   { path: '/tools', component: Tools},
-  { path: '/addfdgvideo', component: AddFDGVideo}
+  { path: '/addfdgvideo', component: AddFDGVideo},
+  { path: '/fund', component: Fund}
 ]
 
 const router = new VueRouter({
