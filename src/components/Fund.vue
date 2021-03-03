@@ -1,15 +1,24 @@
 <template>
     <div>
         <div class="bili-header" v-loading="loading" style="padding-top: 1%">
-            <el-radio-group v-model="radioUser" @change="radioUserChange">
-                <el-radio v-for="user in userList" :key="user" :label="user">{{user}}</el-radio>
+            <el-radio-group v-model="currentFund" @change="fundChange">
+                <el-radio v-for="fund in fundList" :key="fund.id" :label="fund.id">{{ fund.id + ' ' + fund.name }}</el-radio>
             </el-radio-group>
         </div>
         <div id="realChart" :style="'height:' + chartHeight + ';width:' + chartWidth"></div>
+        <el-table :data="tableData" stripe style="width: 100%">
+            <el-table-column prop="region" label="地区" width="180"></el-table-column>
+            <el-table-column prop="name" label="名称"></el-table-column>
+            <el-table-column prop="status" label="状态" width="180"></el-table-column>
+            <el-table-column prop="percent" label="今日涨跌" width="180"></el-table-column>
+        </el-table>
     </div>
 </template>
 
 <script>
+var realChartDom = document.getElementById('realChart');
+var realChart;
+
 var realOption = {
     title: {
         text: '净值估算',
@@ -87,8 +96,14 @@ export default {
     name: 'Fund',
     data () {
         return {
+            loading: false,
             fundList: [],
-            loading: false
+            currentFund: 0,
+            timeList: [],
+            valueList: [],
+            yesterday: '',
+            currentPercentChange: '',
+            time: ''
         }
     },
     computed: {
@@ -100,9 +115,38 @@ export default {
         }
     },
     mounted () {
-        var realChartDom = document.getElementById('realChart');
-        var realChart = this.$echarts.init(realChartDom);
+        realChart = this.$echarts.init(realChartDom);
 
+        const that = this;
+        this.$axios.get(this.COMMON.chives_host + '/fund').then(function(res) {
+            res = res.data;
+            if (res.code === 200 && res.data) {
+                that.fundList = res.data;
+            }
+        })
+    },
+    methods: {
+        fundChange() {
+            const that = this;
+            this.$axios.get(this.COMMON.chives_host + '/fund/today/' + this.currentFund).then(function(res) {
+                res = res.data;
+                if (res.code === 200 && res.data) {
+                    that.timeList = res.data.timeList;
+                    that.valueList = res.data.valueList;
+                    that.yesterday = res.data.yesterday;
+                    realChart.setOption(realOption);
+                }
+            })
+
+            this.$axios.get(this.COMMON.chives_host + '/fund/real/' + this.currentFund).then(function(res) {
+                res = res.data;
+                if (res.code === 200 && res.data) {
+                    that.currentPercentChange = res.data.ext;
+                    that.time = res.data.time;
+
+                }
+            })
+        },
     }
 }
 </script>
