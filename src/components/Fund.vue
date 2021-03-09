@@ -10,13 +10,26 @@
                 <div id="realChart" :style="'height:' + chartHeight + ';width:' + chartWidth"></div>
                 <el-row>
                     <el-col :span="18" :offset="3">
+                        <div style="margin: auto 0; padding-top: 10px;">
+                            <span>{{ yesterday + '净值：' }}</span>
+                            <span v-if="yesterdayValue > 0" style="color: red">{{ yesterdayValue + '%' }}</span>
+                            <span v-else-if="yesterdayValue < 0" style="color: green">{{ yesterdayValue + '%' }}</span>
+                            <span v-else>{{ yesterdayValue + '%' }}</span>
+                        </div>
+                        <div style="margin: auto 0; padding-top: 10px;">
+                            <span>{{ time + '估算净值：' }}</span>
+                            <span v-if="currentPercentChange > 0" style="color: red">{{ currentPercentChange + '%' }}</span>
+                            <span v-else-if="currentPercentChange < 0" style="color: green">{{ currentPercentChange + '%' }}</span>
+                            <span v-else>{{ currentPercentChange + '%' }}</span>
+                        </div>
                         <el-table :data="stockList" stripe style="width: 100%; margin: 0 auto;" :default-sort = "{prop: 'percent', order: 'descending'}">
                             <el-table-column prop="region" label="地区" sortable></el-table-column>
                             <el-table-column prop="stockName" label="名称" sortable></el-table-column>
                             <el-table-column prop="statusName" label="状态" sortable>
                                 <template slot-scope="scope">
-                                    <span v-if="scope.row.statusName == '交易中'" style="color: red">{{ scope.row.statusName}}</span>
-                                    <span v-else>{{ scope.row.statusName }}</span>
+                                    <el-tag v-if="scope.row.statusName === '交易中'" type="success">{{ scope.row.statusName}}</el-tag>
+                                    <el-tag v-else-if="scope.row.statusName === '盘前交易' || scope.row.statusName === '盘后交易'">{{ scope.row.statusName}}</el-tag>
+                                    <el-tag v-else type="info">{{ scope.row.statusName}}</el-tag>
                                 </template>
                             </el-table-column>
                             <el-table-column prop="current" label="当前" sortable></el-table-column>
@@ -49,17 +62,31 @@ var realOption = {
     tooltip: {
         trigger: 'axis',
         axisPointer: {
-            type: 'cross',
             label: {
                 backgroundColor: '#283b56'
             }
         }
     },
-    dataZoom: {
-        show: false,
+    title: {
+        text: ''
+    },
+    dataZoom: [{
+        type: 'inside',
         start: 0,
         end: 100
-    },
+    }, {
+        start: 0,
+        end: 100,
+        handleIcon: 'M10.7,11.9v-1.3H9.3v1.3c-4.9,0.3-8.8,4.4-8.8,9.4c0,5,3.9,9.1,8.8,9.4v1.3h1.3v-1.3c4.9-0.3,8.8-4.4,8.8-9.4C19.5,16.3,15.6,12.2,10.7,11.9z M13.3,24.4H6.7V23h6.6V24.4z M13.3,19.6H6.7v-1.4h6.6V19.6z',
+        handleSize: '80%',
+        handleStyle: {
+        color: '#fff',
+        shadowBlur: 3,
+        shadowColor: 'rgba(0, 0, 0, 0.6)',
+        shadowOffsetX: 2,
+        shadowOffsetY: 2
+        }
+    }],
     xAxis: [
         {
             type: 'category',
@@ -101,6 +128,7 @@ export default {
             fundList: [],
             currentFund: 0,
             yesterday: '',
+            yesterdayValue: '',
             currentPercentChange: '',
             time: '',
             stockList: []
@@ -122,6 +150,8 @@ export default {
             res = res.data;
             if (res.code === 200 && res.data) {
                 that.fundList = res.data;
+            } else {
+                this.$message.error(res.msg);
             }
         })
     },
@@ -133,20 +163,49 @@ export default {
                 if (res.code === 200 && res.data) {
                     realOption.xAxis[0].data = res.data.timeList;
                     realOption.series[0].data = res.data.valueList;
+                    realOption.title.text = res.data.today + '净值估算';
                     that.yesterday = res.data.yesterday;
+                    that.yesterdayValue = res.data.yesterdayValue;
                     realChart.setOption(realOption);
+                } else {
+                    this.$message.error(res.msg);
                 }
             })
 
             this.$axios.get(this.COMMON.chives_host + '/fund/real/' + this.currentFund).then(function(res) {
                 res = res.data;
                 if (res.code === 200 && res.data) {
-                    that.currentPercentChange = res.data.ext;
+                    that.currentPercentChange = res.data.currentChange;
                     that.time = res.data.time;
                     that.stockList = res.data.fundStockList;
+
+                    if (res.data.refresh) {
+                        setInterval(that.autoRefresh, 60000);
+                    }
+                } else {
+                    this.$message.error(res.msg);
                 }
             })
         },
+
+        autoRefresh() {
+            const that = this;
+            this.$axios.get(this.COMMON.chives_host + '/fund/real/' + this.currentFund).then(function(res) {
+                res = res.data;
+                if (res.code === 200 && res.data) {
+                    that.currentPercentChange = res.data.currentChange;
+                    that.time = res.data.time;
+                    that.stockList = res.data.fundStockList;
+
+                    realOption.xAxis[0].data.push(res.data.time);
+                    realOption.series[0].data.push(res.data.currentChange);
+
+                    realChart.setOption(realOption);
+                } else {
+                    this.$message.error(res.msg);
+                }
+            })
+        }
     }
 }
 </script>
@@ -154,7 +213,7 @@ export default {
 <style>
 .bili-header {
     box-shadow: 0 2px 4px rgba(0, 0, 0, .12), 0 0 6px rgba(0, 0, 0, .04);
-    width: 80%; 
+    width: 80%;
     margin: auto;
     padding-bottom: 1%;
     margin-bottom: 1%;
