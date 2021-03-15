@@ -10,7 +10,7 @@
                 <div id="realChart" :style="'height:' + chartHeight + ';width:' + chartWidth"></div>
                 <el-row>
                     <el-col :span="18" :offset="3">
-                        <div style="margin: auto 0; padding-top: 10px;">
+                        <div style="margin: auto 0; padding-top: 10px">
                             <span>{{ yesterday + '净值：' }}</span>
                             <span v-if="yesterdayValue > 0" style="color: red">{{ yesterdayValue + '%' }}</span>
                             <span v-else-if="yesterdayValue < 0" style="color: green">{{ yesterdayValue + '%' }}</span>
@@ -18,33 +18,33 @@
                         </div>
                         <div style="margin: auto 0; padding-top: 10px;">
                             <span>{{ time + '估算净值：' }}</span>
-                            <span v-if="currentPercentChange > 0" style="color: red">{{ currentPercentChange + '%' }}</span>
-                            <span v-else-if="currentPercentChange < 0" style="color: green">{{ currentPercentChange + '%' }}</span>
-                            <span v-else>{{ currentPercentChange + '%' }}</span>
+                            <span v-if="currentPercentChange > 0" ref="currentChange" style="color: red">{{ currentPercentChange + '%' }}</span>
+                            <span v-else-if="currentPercentChange < 0" ref="currentChange" style="color: green">{{ currentPercentChange + '%' }}</span>
+                            <span v-else ref="currentChange">{{ currentPercentChange + '%' }}</span>
                         </div>
-                        <el-table :data="stockList" stripe style="width: 100%; margin: 0 auto;" :default-sort = "{prop: 'percent', order: 'descending'}">
-                            <el-table-column prop="region" label="地区" sortable></el-table-column>
-                            <el-table-column prop="stockName" label="名称" sortable></el-table-column>
-                            <el-table-column prop="statusName" label="状态" sortable>
+                        <el-table :data="stockList" stripe style="width: 100%; margin: 0 auto;" :default-sort = "{prop: 'percent', order: 'descending'}" highlight-current-row current-row-key="stockId">
+                            <el-table-column prop="region" label="地区" sortable align="center"></el-table-column>
+                            <el-table-column prop="stockName" label="名称" sortable align="center"></el-table-column>
+                            <el-table-column prop="statusName" label="状态" sortable align="center">
                                 <template slot-scope="scope">
                                     <el-tag v-if="scope.row.statusName === '交易中'" type="success">{{ scope.row.statusName}}</el-tag>
                                     <el-tag v-else-if="scope.row.statusName === '盘前交易' || scope.row.statusName === '盘后交易'">{{ scope.row.statusName}}</el-tag>
                                     <el-tag v-else type="info">{{ scope.row.statusName}}</el-tag>
                                 </template>
                             </el-table-column>
-                            <el-table-column prop="current" label="当前" sortable></el-table-column>
-                            <el-table-column prop="chg" label="涨跌" sortable>
+                            <el-table-column prop="current" label="当前" sortable align="center"></el-table-column>
+                            <el-table-column prop="chg" label="涨跌" sortable align="center">
                                 <template slot-scope="scope">
-                                    <span v-if="scope.row.chg > 0" style="color: red">{{ scope.row.chg }}</span>
-                                    <span v-if="scope.row.chg == 0">{{ scope.row.chg }}</span>
-                                    <span v-if="scope.row.chg < 0" style="color: green">{{ scope.row.chg }}</span>
+                                    <span v-if="scope.row.chg > 0" :id="'chg-' + scope.row.stockId" style="color: red">{{ scope.row.chg }}</span>
+                                    <span v-if="scope.row.chg == 0" :id="'chg-' + scope.row.stockId">{{ scope.row.chg }}</span>
+                                    <span v-if="scope.row.chg < 0" :id="'chg-' + scope.row.stockId" style="color: green">{{ scope.row.chg }}</span>
                                 </template>
                             </el-table-column>
-                            <el-table-column prop="percent" label="今日涨跌" sortable>
+                            <el-table-column prop="percent" label="今日涨跌" sortable align="center">
                                 <template slot-scope="scope">
-                                    <span v-if="scope.row.percent > 0" style="color: red">{{ scope.row.percent.toFixed(2) + '%'}}</span>
-                                    <span v-if="scope.row.percent == 0">{{ scope.row.percent.toFixed(2) + '%' }}</span>
-                                    <span v-if="scope.row.percent < 0" style="color: green">{{ scope.row.percent.toFixed(2) + '%' }}</span>
+                                    <span v-if="scope.row.percent > 0" :id="'percent-' + scope.row.stockId" style="color: red">{{ scope.row.percent.toFixed(2) + '%'}}</span>
+                                    <span v-if="scope.row.percent == 0" :id="'percent-' + scope.row.stockId">{{ scope.row.percent.toFixed(2) + '%' }}</span>
+                                    <span v-if="scope.row.percent < 0" :id="'percent-' + scope.row.stockId" style="color: green">{{ scope.row.percent.toFixed(2) + '%' }}</span>
                                 </template>
                             </el-table-column>
                         </el-table>
@@ -193,18 +193,64 @@ export default {
             this.$axios.get(this.COMMON.chives_host + '/fund/real/' + this.currentFund).then(function(res) {
                 res = res.data;
                 if (res.code === 200 && res.data) {
+                    var oldCurrent = that.currentPercentChange;
                     that.currentPercentChange = res.data.currentChange;
                     that.time = res.data.time;
+                    var oldList = JSON.parse(JSON.stringify(that.stockList))
                     that.stockList = res.data.fundStockList;
 
                     realOption.xAxis[0].data.push(res.data.time);
                     realOption.series[0].data.push(res.data.currentChange);
 
                     realChart.setOption(realOption);
+
+                    that.addClass(oldCurrent, that.currentPercentChange, oldList, that.stockList);
                 } else {
-                    this.$message.error(res.msg);
+                    that.$message.error(res.msg);
                 }
             })
+        },
+
+        addClass(oldCurrent, newCurrent, oldList, newList) {
+            if (oldCurrent < newCurrent) {
+                this.$refs.currentChange.setAttribute('class', 'up');
+            } else if (oldCurrent > newCurrent) {
+                this.$refs.currentChange.setAttribute('class', 'down');
+            }
+
+            var domList = [];
+            for (var index in newList) {
+                if (oldList[index].chg != newList[index].chg) {
+                    var dom1 = document.getElementById("chg-" + newList[index].stockId).parentNode.parentNode;
+                    var dom2 = document.getElementById("percent-" + newList[index].stockId).parentNode.parentNode;
+                    domList.push(dom1);
+                    domList.push(dom2);
+                    var oldClass1 = dom1.getAttribute('class')
+                    var oldClass2 = dom2.getAttribute('class')
+                    if (oldList[index].chg < newList[index].chg) {
+                        dom1.setAttribute('class', oldClass1 + ' up');
+                        dom2.setAttribute('class', oldClass2 + ' up');
+                    } else {
+                        dom1.setAttribute('class', oldClass1 + ' down');
+                        dom2.setAttribute('class', oldClass2 + ' down');
+                    }
+                }
+            }
+
+            var that = this;
+            setTimeout(function() {
+                that.clearClass(domList)
+            }, 3000);
+        },
+
+        clearClass(domList) {
+            this.$refs.currentChange.setAttribute('class', '');
+
+            for (var index in domList) {
+                var dom = domList[index];
+                var oldClass = dom.getAttribute('class')
+                dom.setAttribute('class', oldClass.replace('up', '').replace('down', ''));
+            }
         }
     }
 }
@@ -218,5 +264,26 @@ export default {
     padding-bottom: 1%;
     margin-bottom: 1%;
     margin-top: 1%;
+}
+.up {
+    animation-name: up;
+    animation-duration: 3s;
+}
+.down {
+    animation-name: down;
+    animation-duration: 3s;
+}
+
+@keyframes up {
+  0%   {background-color: white;}
+  25%  {background-color: #FCDEDE;}
+  75%  {background-color: #FCDEDE;}
+  100%  {background-color: white;}
+}
+@keyframes down {
+  0%   {background-color: white;}
+  25%  {background-color: #C2F2C2;}
+  75%  {background-color: #C2F2C2;}
+  100%  {background-color: white;}
 }
 </style>
