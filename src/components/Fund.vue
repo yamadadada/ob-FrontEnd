@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div class="bili-header" v-loading="loading" style="padding-top: 1%">
+        <div class="bili-header" style="padding-top: 1%">
             <el-radio-group v-model="currentFund" @change="fundChange">
                 <el-radio v-for="fund in fundList" :key="fund.id" :label="fund.id">{{ fund.id + ' ' + fund.name }}</el-radio>
             </el-radio-group>
@@ -21,6 +21,10 @@
                             <span v-if="currentPercentChange > 0" ref="currentChange" style="color: red">{{ currentPercentChange + '%' }}</span>
                             <span v-else-if="currentPercentChange < 0" ref="currentChange" style="color: green">{{ currentPercentChange + '%' }}</span>
                             <span v-else ref="currentChange">{{ currentPercentChange + '%' }}</span>
+                        </div>
+                        <div style="padding-top: 10px; text-align: right">
+                            <i v-if="refreshTime" class="el-icon-loading"></i>
+                            <span>{{ time + '秒后刷新' }}</span>
                         </div>
                         <el-table :data="stockList" stripe style="width: 100%; margin: 0 auto;" :default-sort = "{prop: 'percent', order: 'descending'}" highlight-current-row current-row-key="stockId">
                             <el-table-column prop="region" label="地区" sortable align="center"></el-table-column>
@@ -131,7 +135,9 @@ export default {
             yesterdayValue: '',
             currentPercentChange: '',
             time: '',
-            stockList: []
+            stockList: [],
+            refreshTime: 60,
+            showLoading: false
         }
     },
     computed: {
@@ -180,7 +186,7 @@ export default {
                     that.stockList = res.data.fundStockList;
 
                     if (res.data.refresh) {
-                        setInterval(that.autoRefresh, 60000);
+                        setInterval(that.autoRefresh, 1000);
                     }
                 } else {
                     this.$message.error(res.msg);
@@ -189,26 +195,33 @@ export default {
         },
 
         autoRefresh() {
-            const that = this;
-            this.$axios.get(this.COMMON.chives_host + '/fund/real/' + this.currentFund).then(function(res) {
-                res = res.data;
-                if (res.code === 200 && res.data) {
-                    var oldCurrent = that.currentPercentChange;
-                    that.currentPercentChange = res.data.currentChange;
-                    that.time = res.data.time;
-                    var oldList = JSON.parse(JSON.stringify(that.stockList))
-                    that.stockList = res.data.fundStockList;
+            this.refreshTime = this.refreshTime - 1;
+            if (this.refreshTime === 0) {
+                this.refreshTime = 60;
+                this.showLoading = true;
+                const that = this;
+                this.$axios.get(this.COMMON.chives_host + '/fund/real/' + this.currentFund).then(function(res) {
+                    res = res.data;
+                    if (res.code === 200 && res.data) {
+                        var oldCurrent = that.currentPercentChange;
+                        that.currentPercentChange = res.data.currentChange;
+                        that.time = res.data.time;
+                        var oldList = JSON.parse(JSON.stringify(that.stockList))
+                        that.stockList = res.data.fundStockList;
 
-                    realOption.xAxis[0].data.push(res.data.time);
-                    realOption.series[0].data.push(res.data.currentChange);
+                        realOption.xAxis[0].data.push(res.data.time);
+                        realOption.series[0].data.push(res.data.currentChange);
 
-                    realChart.setOption(realOption);
+                        realChart.setOption(realOption);
 
-                    that.addClass(oldCurrent, that.currentPercentChange, oldList, that.stockList);
-                } else {
-                    that.$message.error(res.msg);
-                }
-            })
+                        that.showLoading = false;
+                        that.addClass(oldCurrent, that.currentPercentChange, oldList, that.stockList);
+                    } else {
+                        that.showLoading = false;
+                        that.$message.error(res.msg);
+                    }
+                })
+            }
         },
 
         addClass(oldCurrent, newCurrent, oldList, newList) {
