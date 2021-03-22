@@ -23,8 +23,9 @@
                             <span v-else ref="currentChange">{{ currentPercentChange + '%' }}</span>
                         </div>
                         <div style="padding-top: 10px; text-align: right">
-                            <i v-if="refreshTime" class="el-icon-loading"></i>
-                            <span>{{ time + '秒后刷新' }}</span>
+                            <i v-if="showLoading" class="el-icon-loading"></i>
+                            <span v-if="isAutoRefresh">{{ refreshTime + '秒后刷新' }}</span>
+                            <span v-else>周末愉快~</span>
                         </div>
                         <el-table :data="stockList" stripe style="width: 100%; margin: 0 auto;" :default-sort = "{prop: 'percent', order: 'descending'}" highlight-current-row current-row-key="stockId">
                             <el-table-column prop="region" label="地区" sortable align="center"></el-table-column>
@@ -128,7 +129,6 @@ export default {
     name: 'Fund',
     data () {
         return {
-            loading: false,
             fundList: [],
             currentFund: 0,
             yesterday: '',
@@ -137,7 +137,8 @@ export default {
             time: '',
             stockList: [],
             refreshTime: 60,
-            showLoading: false
+            showLoading: false,
+            isAutoRefresh: false
         }
     },
     computed: {
@@ -186,7 +187,10 @@ export default {
                     that.stockList = res.data.fundStockList;
 
                     if (res.data.refresh) {
+                        that.isAutoRefresh = true;
                         setInterval(that.autoRefresh, 1000);
+                    } else {
+                        that.isAutoRefresh = false;
                     }
                 } else {
                     this.$message.error(res.msg);
@@ -225,22 +229,29 @@ export default {
         },
 
         addClass(oldCurrent, newCurrent, oldList, newList) {
-            if (oldCurrent < newCurrent) {
+            if (parseFloat(oldCurrent) < parseFloat(newCurrent)) {
                 this.$refs.currentChange.setAttribute('class', 'up');
-            } else if (oldCurrent > newCurrent) {
+            } else if (parseFloat(oldCurrent) > parseFloat(newCurrent)) {
                 this.$refs.currentChange.setAttribute('class', 'down');
             }
 
             var domList = [];
             for (var index in newList) {
-                if (oldList[index].chg != newList[index].chg) {
+                var oldChg = newList[index].chg;
+                for (var i in oldList) {
+                    if (oldList[i].stockId == newList[index].stockId) {
+                        oldChg = oldList[i].chg;
+                        break;
+                    }
+                }
+                if (oldChg != newList[index].chg) {
                     var dom1 = document.getElementById("chg-" + newList[index].stockId).parentNode.parentNode;
                     var dom2 = document.getElementById("percent-" + newList[index].stockId).parentNode.parentNode;
                     domList.push(dom1);
                     domList.push(dom2);
                     var oldClass1 = dom1.getAttribute('class')
                     var oldClass2 = dom2.getAttribute('class')
-                    if (oldList[index].chg < newList[index].chg) {
+                    if (oldChg < newList[index].chg) {
                         dom1.setAttribute('class', oldClass1 + ' up');
                         dom2.setAttribute('class', oldClass2 + ' up');
                     } else {

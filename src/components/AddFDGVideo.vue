@@ -42,7 +42,7 @@
       </el-image>
     </div>
     <div>
-      {{ new Date().setTime(new Date(video.pubdate).getTime() + 8 * 60 * 60 * 1000).toJSON().substr(0, 19).replace('T', ' ') }}
+      {{ new Date().setTime(new Date(video.pubdate).getTime() + 8 * 60 * 60 * 1000).toLocaleString() }}
     </div>
     <div>
       UP主：{{ video.owner }}
