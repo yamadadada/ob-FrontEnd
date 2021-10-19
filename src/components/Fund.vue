@@ -22,10 +22,26 @@
                             <span v-else-if="currentPercentChange < 0" ref="currentChange" style="color: green">{{ currentPercentChange + '%' }}</span>
                             <span v-else ref="currentChange">{{ currentPercentChange + '%' }}</span>
                         </div>
-                        <div style="padding-top: 10px; text-align: right">
-                            <i v-if="showLoading" class="el-icon-loading"></i>
-                            <span v-if="isAutoRefresh">{{ refreshTime + '秒后刷新' }}</span>
-                            <span v-else>周末愉快~</span>
+                        <div style="padding-top: 10px; ">
+                            <el-row>
+                                <el-col :span="12">
+                                    <div text-align: right>
+                                        涨
+                                        <span style="color: red"></span>
+
+                                        <i v-if="showLoading" class="el-icon-loading"></i>
+                                        <span v-if="isAutoRefresh">{{ refreshTime + '秒后刷新' }}</span>
+                                        <span v-else>周末愉快~</span>
+                                    </div>
+                                </el-col>
+                                <el-col :span="18">
+                                    <div style="text-align: right">
+                                        <i v-if="showLoading" class="el-icon-loading"></i>
+                                        <span v-if="isAutoRefresh">{{ refreshTime + '秒后刷新' }}</span>
+                                        <span v-else>周末愉快~</span>
+                                    </div>
+                                </el-col>
+                            </el-row>
                         </div>
                         <el-table :data="stockList" stripe style="width: 100%; margin: 0 auto;" :default-sort = "{prop: 'percent', order: 'descending'}" highlight-current-row current-row-key="stockId">
                             <el-table-column prop="region" label="地区" sortable align="center"></el-table-column>
@@ -38,17 +54,17 @@
                                 </template>
                             </el-table-column>
                             <el-table-column prop="current" label="当前" sortable align="center"></el-table-column>
-                            <el-table-column prop="chg" label="涨跌" sortable align="center">
+                            <el-table-column prop="chg" label="今日涨跌" sortable align="center">
                                 <template slot-scope="scope">
                                     <span v-if="scope.row.chg > 0" :id="'chg-' + scope.row.stockId" style="color: red">{{ scope.row.chg }}</span>
-                                    <span v-if="scope.row.chg == 0" :id="'chg-' + scope.row.stockId">{{ scope.row.chg }}</span>
+                                    <span v-if="scope.row.chg == 0" :id="'chg-' + scope.row.stockId">{{ scope.row.statusName === '休市' ? '' : scope.row.chg }}</span>
                                     <span v-if="scope.row.chg < 0" :id="'chg-' + scope.row.stockId" style="color: green">{{ scope.row.chg }}</span>
                                 </template>
                             </el-table-column>
-                            <el-table-column prop="percent" label="今日涨跌" sortable align="center">
+                            <el-table-column prop="percent" label="今日涨跌幅" sortable align="center">
                                 <template slot-scope="scope">
                                     <span v-if="scope.row.percent > 0" :id="'percent-' + scope.row.stockId" style="color: red">{{ scope.row.percent.toFixed(2) + '%'}}</span>
-                                    <span v-if="scope.row.percent == 0" :id="'percent-' + scope.row.stockId">{{ scope.row.percent.toFixed(2) + '%' }}</span>
+                                    <span v-if="scope.row.percent == 0" :id="'percent-' + scope.row.stockId">{{ scope.row.statusName === '休市' ? '' : scope.row.percent.toFixed(2) + '%' }}</span>
                                     <span v-if="scope.row.percent < 0" :id="'percent-' + scope.row.stockId" style="color: green">{{ scope.row.percent.toFixed(2) + '%' }}</span>
                                 </template>
                             </el-table-column>
@@ -138,7 +154,10 @@ export default {
             stockList: [],
             refreshTime: 60,
             showLoading: false,
-            isAutoRefresh: false
+            isAutoRefresh: false,
+            upCount: 0,
+            zeroCount: 0,
+            downCount: 0
         }
     },
     computed: {
@@ -186,6 +205,8 @@ export default {
                     that.time = res.data.time;
                     that.stockList = res.data.fundStockList;
 
+                    that.updateCount(res.data.fundStockList);
+
                     if (res.data.refresh) {
                         that.isAutoRefresh = true;
                         setInterval(that.autoRefresh, 1000);
@@ -217,6 +238,8 @@ export default {
                         realOption.series[0].data.push(res.data.currentChange);
 
                         realChart.setOption(realOption);
+
+                        that.updateCount(res.data.fundStockList);
 
                         that.showLoading = false;
                         that.addClass(oldCurrent, that.currentPercentChange, oldList, that.stockList);
@@ -275,6 +298,25 @@ export default {
                 var oldClass = dom.getAttribute('class')
                 dom.setAttribute('class', oldClass.replace('up', '').replace('down', ''));
             }
+        },
+
+        updateCount(stockList) {
+            var up = 0;
+            var zero = 0;
+            var down = 0;
+            for (var index in stockList) {
+                var chg = stockList[index].chg;
+                if (chg > 0) {
+                    up = up + 1;
+                } else if (chg < 0) {
+                    down = down + 1;
+                } else {
+                    zero = zero + 1;
+                }
+            }
+            this.upCount = up;
+            this.zeroCount = zero;
+            this.downCount = down;
         }
     }
 }
